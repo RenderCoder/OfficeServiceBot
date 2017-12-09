@@ -4,6 +4,7 @@ import requests
 import threading
 import base64
 from os import environ
+from process_traffic_result import insert_data, procress_data_string
 
 username = environ.get('username', 'admin')
 password = environ.get('password', 'admin')
@@ -46,6 +47,7 @@ def getTraffic():
     # print(r.headers['content-type'])
     print(r.content)
     # '''
+    insert_data(procress_data_string(r.content))
 
 def setInterval(func,time):
     e = threading.Event()
@@ -53,4 +55,4 @@ def setInterval(func,time):
         func()
 
 getToken()
-setInterval(getTraffic, 2)
+setInterval(getTraffic, 15)

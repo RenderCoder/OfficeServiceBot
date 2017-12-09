@@ -27,29 +27,55 @@ all_traffic_data = json.loads(result[1])
 
 print(sub_device_traffic_data)
 
-conn = sqlite3.connect('test.db')
-print('Opened database successfully')
+def procress_data_string(data_bytes):
+    test_data = data_bytes
+    test_data = bytes.decode(test_data, 'utf-8')
+    result = re.sub(r'var array_traffic = new Array\(\)\;\nvar router_traffic = new Array\(\)\;\narray_traffic = ', '', test_data)
+    result = re.sub(r'\n|\;|\ufeff', '', result)
+    result = result.split('router_traffic = ')
+    if len(result) < 2:
+        print('路由实时带宽使用数据解析错误.')
+        exit(0)
 
-c = conn.cursor()
-c.execute('''CREATE TABLE if not exists TRAFFIC_HISTORY
-       (ID INTEGER PRIMARY KEY     AUTOINCREMENT,
-       UP              INT     NOT NULL,
-       DOWN            INT     NOT NULL,
-       MAC        CHAR(11));''')
-print('Table created successfully')
-c.execute('''
-    CREATE INDEX if not exists MAC_ADDRESS
-    ON TRAFFIC_HISTORY (MAC);
-''')
+    sub_device_traffic_data = json.loads(result[0])
+    sub_device_traffic_data = map(
+        lambda x: {
+            'mac': x[0],
+            'up': round(int(x[1])/1024/1024),
+            'down': round(int(x[2])/1024/1024)
+        },
+        sub_device_traffic_data
+    )
+    sub_device_traffic_data = list(sub_device_traffic_data)
+    all_traffic_data = json.loads(result[1])
+    return sub_device_traffic_data
 
-# insert
+def insert_data(sub_device_traffic_data):
+    conn = sqlite3.connect('test.db')
+    print('Opened database successfully')
 
-for traffic_item in sub_device_traffic_data:
-    print(traffic_item)
-    c.execute("INSERT INTO TRAFFIC_HISTORY (UP,DOWN,MAC) \
-      VALUES ({up}, {down}, '{mac}')".format(up=traffic_item['up'], down=traffic_item['down'], mac=traffic_item['mac']))
+    c = conn.cursor()
+    c.execute('''CREATE TABLE if not exists TRAFFIC_HISTORY
+        (ID INTEGER PRIMARY KEY     AUTOINCREMENT,
+        UP              INT     NOT NULL,
+        DOWN            INT     NOT NULL,
+        MAC        CHAR(11),
+        Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        );''')
+    print('Table created successfully')
+    c.execute('''
+        CREATE INDEX if not exists MAC_ADDRESS
+        ON TRAFFIC_HISTORY (MAC);
+    ''')
 
-print('commit')
-conn.commit()
+    # insert
 
-conn.close()
+    for traffic_item in sub_device_traffic_data:
+        print(traffic_item)
+        c.execute("INSERT INTO TRAFFIC_HISTORY (UP,DOWN,MAC) \
+        VALUES ({up}, {down}, '{mac}')".format(up=traffic_item['up'], down=traffic_item['down'], mac=traffic_item['mac']))
+
+    print('commit')
+    conn.commit()
+
+    conn.close()
