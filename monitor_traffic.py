@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+# 监听流量数据并存储到数据库
 import requests
 import threading
 import base64
