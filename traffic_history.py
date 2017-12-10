@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import re
 import json
 
+image_path = './static'
+
 # 读取 mac 地址配置
 def load_device_name_config(): 
     device_name_config_file = open('./device_name.json', 'r')
@@ -35,13 +37,17 @@ def save_image():
     fig = plt.gcf()
     fig.set_size_inches(12, 5)
     plt.draw()
-    fig.savefig('./images/all.png')#, dpi=100)
+    fig.savefig(image_path + '/all.png')#, dpi=100)
 
-def draw_single_device_traffic(mac, up_array, down_array):
+def draw_single_device_traffic(mac, data):
     file_name = re.sub(r'\:', '_', mac)
     plt.gcf().clear()
-    plt.plot(np.array(up_array), label='UP')
-    plt.plot(np.array(down_array), label='DOWN')
+    
+    plt.plot(np.array(data['UP']), label='UP')
+    plt.plot(np.array(data['DOWN']), label='DOWN')
+    plt.plot(np.array([data['mean_value_for_up']]*len(data['UP'])), ':', label='mean value for up')
+    plt.plot(np.array([data['mean_value_for_down']]*len(data['DOWN'])), ':', label='mean value for down')
+
     plt.legend(bbox_to_anchor=(1.04,1), borderaxespad=0)
     plt.subplots_adjust(right=0.8)
     plt.ylabel('network KB/s')  #为y轴加注释
@@ -50,7 +56,7 @@ def draw_single_device_traffic(mac, up_array, down_array):
     fig = plt.gcf()
     # fig.set_size_inches(12, 5)
     plt.draw()
-    fig.savefig('./images/{file_name}.png'.format(file_name=file_name))
+    fig.savefig(image_path + '/{file_name}.png'.format(file_name=file_name))
 
 conn = sqlite3.connect('test.db')
 print('Opened database successfully')
@@ -88,10 +94,16 @@ for key in recent_devices_traffic_data.keys():
         recent_devices_traffic_data[key]['UP'].append(up)
         recent_devices_traffic_data[key]['DOWN'].append(down)
     add_data_to_image(key, recent_devices_traffic_data[key]['DOWN'])
+    recent_devices_traffic_data[key]['mean_value_for_up'] = np.array(recent_devices_traffic_data[key]['UP']).mean()
+    recent_devices_traffic_data[key]['mean_value_for_down'] = np.array(recent_devices_traffic_data[key]['DOWN']).mean()
 save_image()
+# 保存数据到文件缓存
+cache_file = open('./cache_data.json', 'w')
+cache_file.write(json.dumps(recent_devices_traffic_data))
+cache_file.close()
 
 for key in recent_devices_traffic_data.keys():
-    draw_single_device_traffic(key, recent_devices_traffic_data[key]['UP'], recent_devices_traffic_data[key]['DOWN'])
+    draw_single_device_traffic(key, recent_devices_traffic_data[key])
 
 print(recent_devices_traffic_data)
 

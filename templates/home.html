@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Network Traffic</title>
+    <style>
+    .main {
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <h1>Network Traffic</h1>
+        <img src="static/all.png" alt="">
+        
+        <p>Traffic details:</p>
+
+        {% for image_name in device_traffic_image_name %}
+            <p>device: {{image_name}}</p>
+            <img src="static/{{image_name}}.png" alt="">
+        {% endfor %}
+    </div>
+</body>
+</html>
