@@ -6,6 +6,7 @@ import threading
 import base64
 from os import environ
 from process_traffic_result import insert_data, procress_data_string
+from traffic_history import draw
 
 username = environ.get('username', 'admin')
 password = environ.get('password', 'admin')
@@ -49,11 +50,21 @@ def getTraffic():
     print(r.content)
     # '''
     insert_data(procress_data_string(r.content))
+    # 绘制图形并缓存数据到文件
+    draw()
 
 def setInterval(func,time):
     e = threading.Event()
     while not e.wait(time):
         func()
 
-getToken()
-setInterval(getTraffic, 15)
+
+def setup_token():
+    getToken()
+
+def start_monitor():
+    setInterval(getTraffic, 15)
+
+if __name__ == '__main__':
+    setup_token()
+    start_monitor()

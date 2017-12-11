@@ -6,6 +6,9 @@ import os
 from flask import Flask, render_template
 import sqlite3
 import re
+from monitor_traffic import setup_token, start_monitor
+import atexit
+import threading
 
 '''
 token = os.environ.get('dingtalk_token', 'a')
@@ -53,6 +56,26 @@ def home():
     mac_list = get_mac_list()
     device_traffic_image_name = [*map(lambda x: re.sub(r'\:', '_', x), mac_list)]
     return render_template('home.html', mac_list=mac_list, device_traffic_image_name=device_traffic_image_name)
+
+# 创建更新网络使用数据线程
+class MonitorTrafficThread(threading.Thread):
+    def __init__(self, threadID, name):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+    
+    def run(self):
+        setup_token()
+        start_monitor()
+
+monitor_traffic_thread = MonitorTrafficThread(1, 'monitor_traffic_thread')
+monitor_traffic_thread.start()
+
+# 程序退出前动作
+def exit_handler():
+    print('Application will exit.')
+
+atexit.register(exit_handler)
 
 if __name__ == '__main__':
     app.run(debug=True)

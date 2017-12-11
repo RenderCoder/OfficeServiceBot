@@ -58,59 +58,61 @@ def draw_single_device_traffic(mac, data):
     plt.draw()
     fig.savefig(image_path + '/{file_name}.png'.format(file_name=file_name))
 
-conn = sqlite3.connect('test.db')
-print('Opened database successfully')
-c = conn.cursor()
 
-# 获取最后一次数据时间
-cursor = c.execute("SELECT UP, DOWN, MAC, Timestamp  FROM TRAFFIC_HISTORY ORDER BY ID DESC LIMIT 1")
-for row in cursor:
-   print("UP = ", row[0])
-   print("DOWN = ", row[1])
-   print("MAC = ", row[2])
-   time = row[3]
-   print('------')
-print(time)
-'''
-# 获取最近一次统计的 mac 地址数量
-cursor = c.execute("SELECT MAC FROM TRAFFIC_HISTORY WHERE DATETIME(TRAFFIC_HISTORY.Timestamp) = '{time}'".format(time=time))
-for row in cursor:
-    device_count = row[0]
-    print('Lastest traffic data device count = ', device_count)
-'''
-# 查询最近一次统计的 mac 地址列表, 取最近 15 分钟（LIMIT = 15*4）
-recent_devices_traffic_data = {}
-cursor = c.execute("SELECT MAC FROM TRAFFIC_HISTORY WHERE DATETIME(TRAFFIC_HISTORY.Timestamp) = '{time}'".format(time=time))
-for row in cursor:
-    current_mac = row[0]
-    print('current mac = ', current_mac)
-    recent_devices_traffic_data[current_mac] = {'UP':[], 'DOWN':[]}
-    
-for key in recent_devices_traffic_data.keys():
-    cursor = c.execute("SELECT UP, DOWN FROM TRAFFIC_HISTORY WHERE MAC = '{mac}' ORDER BY ID DESC LIMIT 60".format(mac=key))
+def draw():
+    conn = sqlite3.connect('test.db')
+    print('Opened database successfully')
+    c = conn.cursor()
+
+    # 获取最后一次数据时间
+    cursor = c.execute("SELECT UP, DOWN, MAC, Timestamp  FROM TRAFFIC_HISTORY ORDER BY ID DESC LIMIT 1")
     for row in cursor:
-        up = row[0]
-        down = row[1]
-        recent_devices_traffic_data[key]['UP'].append(up)
-        recent_devices_traffic_data[key]['DOWN'].append(down)
-    add_data_to_image(key, recent_devices_traffic_data[key]['DOWN'])
-    recent_devices_traffic_data[key]['mean_value_for_up'] = np.array(recent_devices_traffic_data[key]['UP']).mean()
-    recent_devices_traffic_data[key]['mean_value_for_down'] = np.array(recent_devices_traffic_data[key]['DOWN']).mean()
-save_image()
-# 保存数据到文件缓存
-cache_file = open('./cache_data.json', 'w')
-cache_file.write(json.dumps(recent_devices_traffic_data))
-cache_file.close()
+        print("UP = ", row[0])
+        print("DOWN = ", row[1])
+        print("MAC = ", row[2])
+        time = row[3]
+    print('------')
+    print(time)
+    '''
+    # 获取最近一次统计的 mac 地址数量
+    cursor = c.execute("SELECT MAC FROM TRAFFIC_HISTORY WHERE DATETIME(TRAFFIC_HISTORY.Timestamp) = '{time}'".format(time=time))
+    for row in cursor:
+        device_count = row[0]
+        print('Lastest traffic data device count = ', device_count)
+    '''
+    # 查询最近一次统计的 mac 地址列表, 取最近 15 分钟（LIMIT = 15*4）
+    recent_devices_traffic_data = {}
+    cursor = c.execute("SELECT MAC FROM TRAFFIC_HISTORY WHERE DATETIME(TRAFFIC_HISTORY.Timestamp) = '{time}'".format(time=time))
+    for row in cursor:
+        current_mac = row[0]
+        print('current mac = ', current_mac)
+        recent_devices_traffic_data[current_mac] = {'UP':[], 'DOWN':[]}
+        
+    for key in recent_devices_traffic_data.keys():
+        cursor = c.execute("SELECT UP, DOWN FROM TRAFFIC_HISTORY WHERE MAC = '{mac}' ORDER BY ID DESC LIMIT 60".format(mac=key))
+        for row in cursor:
+            up = row[0]
+            down = row[1]
+            recent_devices_traffic_data[key]['UP'].append(up)
+            recent_devices_traffic_data[key]['DOWN'].append(down)
+        add_data_to_image(key, recent_devices_traffic_data[key]['DOWN'])
+        recent_devices_traffic_data[key]['mean_value_for_up'] = np.array(recent_devices_traffic_data[key]['UP']).mean()
+        recent_devices_traffic_data[key]['mean_value_for_down'] = np.array(recent_devices_traffic_data[key]['DOWN']).mean()
+    save_image()
+    # 保存数据到文件缓存
+    cache_file = open('./cache_data.json', 'w')
+    cache_file.write(json.dumps(recent_devices_traffic_data))
+    cache_file.close()
 
-for key in recent_devices_traffic_data.keys():
-    draw_single_device_traffic(key, recent_devices_traffic_data[key])
+    # 绘制并保存单个设备的网络使用图形
+    for key in recent_devices_traffic_data.keys():
+        print('draw image for key: {key}...'.format(key=key))
+        draw_single_device_traffic(key, recent_devices_traffic_data[key])
+        print('save image done.')
 
-print(recent_devices_traffic_data)
+    print(recent_devices_traffic_data)
+    print("Done.")
+    conn.close()
 
-# 绘制并保存图形
-print('draw image...')
-
-print('save image done.')
-
-print("Done.")
-conn.close()
+if __name__ == '__main__':
+    draw()
